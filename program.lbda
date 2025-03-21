@@ -1,0 +1,12 @@
+a ; variable
+
+fn x.x ; Lambda abstraction with single param
+
+fn xyz. x ; Lambda abstraction with multiple params
+
+; The above can be written as
+fn x. fn y. fn z. x
+
+(x y) ; function application
+
+(fn x. x)
