@@ -75,7 +75,7 @@ class LambdaAbstractionNode(Expression):
         return f"fn {self.param}.{repr(self.body)}"
 
     def __repr__(self):
-        return f"LambdaAbstractionNode('{self.param}', '{repr(self.body)})"
+        return f"LambdaAbstractionNode('{self.param}', '{repr(self.body)}')"
 
 
 @dataclass
@@ -282,6 +282,48 @@ class Parser:
 
 ################### END OF PARSER ########################################
 
+################### INTERPRETER/EVALUATOR ########################
+
+class Evaluator:
+    def beta_reduce(self, ast: Expression):
+        match ast:
+            case VariableNode(_):
+                return ast
+            case LambdaAbstractionNode(param, body):
+                reduced_body = self.beta_reduce(body)
+                return LambdaAbstractionNode(param, reduced_body)
+            case LambdaApplicationNode(left, right):
+                new_left = self.beta_reduce(left)
+
+                if isinstance(new_left, LambdaAbstractionNode):
+                    substituted_result = self.substitute(new_left.param, new_left.body, right)
+                    return self.beta_reduce(substituted_result)
+                
+                new_right = self.beta_reduce(right)
+                return LambdaApplicationNode(new_left, new_right)
+            case _:
+                raise SyntaxError(f"Unknown node type: {ast}")
+    
+    def substitute(self, param: Expression, body: Expression, argument: Expression):
+        match body:
+            case VariableNode(value):
+                if param == value:
+                    return argument
+                return body
+            case LambdaAbstractionNode(_param, body):
+                if param != _param:
+                    r = self.substitute(param, body, argument)
+                    return LambdaAbstractionNode(_param, r)
+                return body
+            case LambdaApplicationNode(left, right):
+                new_left = self.substitute(param, left, argument)
+                new_right = self.substitute(param, right, argument)
+                return LambdaApplicationNode(new_left, new_right)
+            case _:
+                raise SyntaxError(f"Unknown node type: {body}")
+
+################### END OF INTERPRETER/EVALUATOR #################
+
 ################### REPL #############################
 
 class Repl:
@@ -317,12 +359,12 @@ class Repl:
 
         parser = Parser(lexer.get_tokens())
         parser.parse()
-        for a in parser.get_ast():
-            print(json.dumps(a.to_json(), indent=4))
+        # for a in parser.get_ast():
+        #     print(json.dumps(a.to_json(), indent=4))
 
-        # for node in parser.get_ast():
-        #     result = self.evaluator.evaluate(node)
-        #     print(result)
+        evaluator = Evaluator()
+        for a in parser.get_ast():
+            print(evaluator.beta_reduce(a))
 ################### END OF REPL #############################
 
 def main():
