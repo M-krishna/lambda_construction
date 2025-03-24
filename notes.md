@@ -131,6 +131,17 @@ In applicative order evaluation, arguments are fully evaluated before being pass
 
 The key difference is that normal order delays evaluation until necessary, while applicative order evaluates arguments immediately. This can lead to different behaviour, especially with non-terminating expressions.
 
+## Test cases to test Beta reduction
+
+* `(fn x. x) y` => `y`
+
+* `(fn x. x x) y` => `y y`
+
+* `(fn x. (fn y. x)) z` => `fn y.z`
+
+* `(fn x. x y) z` => `z y`
+
+* `((fn x. x) (fn y. y)) z` => `z`
 
 ### Alpha conversion
 Alpha conversion is the process of renaming bound variables in a lambda expression to avoid name conflicts (variable capture) during substitution.
@@ -170,14 +181,84 @@ With Alpha conversion:
 
 Alpha conversion ensures that substitution during beta reduction preserves the intended meaning of your lambda expressions by preventing variable capture problems.
 
-## Test cases to test Beta reduction
+### The Big Picture
+1. **Beta Reduction** is the core evaluation rule of lambda calculus: `(λx.M) N → M[x:=N]`
+2. **Variable capture** can occur during substitution when free variables in `N` become accidentally bound in `M`
+3. **Alpha conversion** resolves this by renaming bound variables in `M` to avoid conflicts with free variables in `N`
+4. In a complete lambda calculus evaluator:
+    * First check if substitution would cause variable capture
+    * If so, perform the substitution
+    * Then safely perform the substitution
+    * Continue beta reduction until no more reductions are possible
 
-* `(fn x. x) y` => `y`
+## Test cases for free and bound variables
 
-* `(fn x. x x) y` => `y y`
+* `x` => free variable: `x` and bound variable is empty
 
-* `(fn x. (fn y. x)) z` => `fn y.z`
+* `fn x.x` => free variable is empty and bound variable is `x`
 
-* `(fn x. x y) z` => `z y`
+* `fn x. x y` => free variable is `y` and bound variable is `x`
 
-* `((fn x. x) (fn y. y)) z` => `z`
+* `fn x. fn y. x y` => free variable is empty and bound variables are `x` and `y`
+
+* `(fn x. x) y` => free variable is `y` and bound variable is `x`
+
+* `fn x. (fn y. x) z` => free variable is `z` and bound variables are `x` and `y`
+
+## Looking at Variable Scoping and Variable Capture
+
+**What is Variable Scoping?**
+
+Lets take an expression `fn x. M`. Whenever there is a lambda abstraction it creates a scope for it. In this case, `x` is bounded to the scope `M`, that is the **body of the lambda expression**.
+
+**Another example:** `fn x. x y`. Here the body of the lambda abstraction is `x y` and we have one param in Lambda abstraction named `x`. This parameter is bounded to the whole body of the lambda abstraction, which means the `x` in **body** is same as the param `x`
+
+
+**Another example:** `fn x. fn x. y`. Here we have 2 lambda abstraction.
+* The outer lambda abstraction is `fn x. M`, where `M` is `fn x. y`, which the body of the outer lambda abstraction
+* The inner lambda abstraction is `fn x. y` and `y` is the body of the inner lambda abstraction
+* Here,
+    * The param `x` in outer lambda abstraction is bounded to inner lambda abstraction `fn x. y`
+    * The param `x` in inner lambda abstraction is bounded to the body of the inner lambda abstraction, which is `y`
+
+To recap what Variable scoping is,
+* Variable scoping comes into picture when there is a Lambda abstraction
+* For a given lambda abstraction `fn x. M`, `x` is bounded to `M` where `M` can be a **VariableNode, LambdaAbstractionNode or LambdaApplicatioNode**
+
+
+**What is Variable Capture?**
+
+We have seen what variable scoping is and how it works. To know more about variable capture, we need to understand the evaluation of Lambda calculus expressions. Let's look at some examples:
+
+* **Example 1:** `(fn x.x) y`
+    * Here I have a Lambda application of type `(M N)`, where `M` is `fn x. x` and `N` is `y`
+    * `M` represents an **identity function**, which means the function returns its argument as the result
+    * In `(fn x.x) y`, we are applying the identity function to the argument `y`
+    * Which will give us `y` as its result
+    * Since the body of the Lambda abstraction is just another Variable(`x`), **there is no variable capture here**
+
+* **Example 2:** `(fn x. fn y. x y) y`
+    * This is an interesting example for **Variable capture**
+    * Here we have a Lambda application of type `(M N)`, where `M` is `(fn x. fn y. x y)` and `N` is `y`
+    * Lets look at how this will get evaluated with **Normal order evaluation**
+        * With Normal order evaluation, we won't **beta reduce** the argument first, instead we directly apply the function to the argument
+        * In this case, `y` is bound to the outer lambda abstraction. Where `x := y`
+        * Now we need to substitute `y` for `x` in the body of the outer lambda abstraction which is `fn x. x y`
+        * After applying, we get `fn y. y y`. AHH THIS IS A PROBLEM!!!!
+        * Can you see what the problem is????
+        * The free variable `y` in `fn x. x y` got captured with this substitution and becomes a bound variable
+        * But that is not the original form of the expression, in the original expression we had `fn x. x y`, where only `x` is bounded and `y` is free.
+        * This is what we call as Variable capture
+
+Now that we know about Variable scoping and Variable capture. Let's take a look at how can we solve this variable capture problem.
+
+### Alpha conversion (again)
+* Here is where alpha conversion comes in, specifically to solve variable capture.
+* Alpha conversion takes places before the actual substitution process.
+* Alpha conversion looks at the current scope of the variable it is going to replace and checks/verify whether this replacement will make the free variable become captured(bounded)
+* Let's look at an example for alpha conversion:
+    * Let's take the same expression as an example: `(fn x. fn y. x y) y`
+    * Here, without alpha conversion if the substitution happens, we get `fn y. y y` as the result. Resulting in the free variable `y` to be captured.
+    * To fix this, while the substitution process
+        * We first check, if the variable names in the lambda expression might cause capture
+        * If so, we rename the bound variable. In this case, we rename `y` to `z` changing it to `fn z. x z`

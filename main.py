@@ -3,10 +3,11 @@
 import sys
 import readline
 import json
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Set, Tuple
 from abc import ABC
 from dataclasses import dataclass
 from enum import Enum
+from collections import deque
 
 arguments = sys.argv
 
@@ -282,9 +283,93 @@ class Parser:
 
 ################### END OF PARSER ########################################
 
+################### ALPHA CONVERSION ##########################
+
+class AlphaConversion:
+    def alpha_convert(self, ast: Expression, old_param: str, new_param: str):
+        if isinstance(ast, VariableNode):
+            if ast.value == old_param:
+                return VariableNode(new_param)
+            return ast
+        elif isinstance(ast, LambdaAbstractionNode):
+            if ast.param == old_param:
+                return LambdaAbstractionNode(new_param, self.alpha_convert(ast.body, old_param, new_param))
+            else:
+                return LambdaAbstractionNode(ast.param, self.alpha_convert(ast.body, old_param, new_param))
+        elif isinstance(ast, LambdaApplicationNode):
+            new_left = self.alpha_convert(ast.left, old_param, new_param)
+            new_right = self.alpha_convert(ast.right, old_param, new_param)
+            return LambdaApplicationNode(new_left, new_right)
+        else:
+            raise SyntaxError(f"Unknown node type: {ast}")
+
+    def get_free_variables(self, ast: Expression):
+        if isinstance(ast, VariableNode):
+            return {ast.value}
+        elif isinstance(ast, LambdaAbstractionNode):
+            return self.get_free_variables(ast.body) - {ast.param}
+        elif isinstance(ast, LambdaApplicationNode):
+            return self.get_free_variables(ast.left) | self.get_free_variables(ast.right)
+        else:
+            raise SyntaxError(f"Unknown node type: {ast}")
+
+    def get_bound_variables(self, ast: Expression, scope: Set = set()):
+        if isinstance(ast, VariableNode):
+            return {ast.value} if ast.value in scope else set()
+        elif isinstance(ast, LambdaAbstractionNode):
+            new_scope: Set = scope | {ast.param}
+            inner_bound: Set = self.get_bound_variables(ast.body, new_scope)
+            return inner_bound | {ast.param}
+        elif isinstance(ast, LambdaApplicationNode):
+            return self.get_bound_variables(ast.left, scope) | self.get_bound_variables(ast.right, scope)
+        else:
+            raise SyntaxError(f"Unknown node type: {ast}")
+
+
+    def get_free_and_bound_variables(self, ast: Expression, scope: Set = set()):
+        free_variables: Set = set()
+        bound_variables: Set = set()
+        queue: deque = deque([(ast, scope)])
+
+        while queue:
+            current_node, current_scope = queue.pop()
+
+            match current_node:
+                case VariableNode(value):
+                    if value not in current_scope:
+                        free_variables.add(value)
+                    else:
+                        bound_variables.add(value)
+                case LambdaAbstractionNode(param, body):
+                    bound_variables.add(param) # Add the param as bound variable
+                    new_scope = current_scope | {param}
+                    queue.append((body, new_scope)) # This will get the bounded variables in inner scope as well
+                case LambdaApplicationNode(left, right):
+                    queue.append((left, current_scope))
+                    queue.append((right, current_scope))
+                case _:
+                    raise SyntaxError(f"Unknown node type: {current_node}")
+        result: Tuple[List, List] = (list(free_variables), list(bound_variables))
+        return result
+
+    def generate_new_variable(self, old_param: str, forbidded_variables: Set):
+        # The newly generated variable shouldn't be part of the "free_variables" set
+        # and it should be like "old_param"
+        candidate = old_param
+        counter = 1
+        while candidate in forbidded_variables:
+            candidate = f"{old_param}{counter}"
+            counter += 1
+        return candidate
+
+################### END OF ALPHA CONVERSION ##########################
+
 ################### INTERPRETER/EVALUATOR ########################
 
 class Evaluator:
+    def __init__(self):
+        self.alpha_conversion = AlphaConversion()
+
     def beta_reduce(self, ast: Expression):
         match ast:
             case VariableNode(_):
@@ -310,9 +395,26 @@ class Evaluator:
                 if param == value:
                     return argument
                 return body
-            case LambdaAbstractionNode(_param, body):
+            case LambdaAbstractionNode(_param, _body):
                 if param != _param:
-                    r = self.substitute(param, body, argument)
+                    # Before substituting we have to check, whether the substitution will cause variable capture
+
+                    # Get the free variable in the argument
+                    fv = self.alpha_conversion.get_free_variables(argument)
+
+                    # Check if the free variable conflicts with the lambda's parameter
+                    if _param in fv:
+                        # Generate a new variable
+                        new_param: str = self.alpha_conversion.generate_new_variable(_param, fv | self.alpha_conversion.get_free_variables(_body) | self.alpha_conversion.get_bound_variables(_body))
+
+                        # Once you have a new variable, now alpha convert the body
+                        new_body = self.alpha_conversion.alpha_convert(_body, _param, new_param)
+
+                        # Now substitute the alpha converted body
+                        r = self.substitute(param, new_body, argument)
+                        return LambdaAbstractionNode(new_param, r)
+
+                    r = self.substitute(param, _body, argument)
                     return LambdaAbstractionNode(_param, r)
                 return body
             case LambdaApplicationNode(left, right):
@@ -365,6 +467,23 @@ class Repl:
         evaluator = Evaluator()
         for a in parser.get_ast():
             print(evaluator.beta_reduce(a))
+
+        # for a in parser.get_ast():
+        #     free_variables = AlphaConversion()
+        #     fv = free_variables.get_free_variables(a)
+        #     print(f"free variables: {fv}")
+
+        # for a in parser.get_ast():
+        #     alpha_conversion = AlphaConversion()
+        #     bv = alpha_conversion.get_bound_variables(a)
+        #     print(f"Bound variables: {bv}")
+
+        # for a in parser.get_ast():
+        #     alpha_conversion = AlphaConversion()
+        #     fv, bv = alpha_conversion.get_free_and_bound_variables(a)
+        #     print(f"Free variables: {fv}")
+        #     print(f"Bound variables: {bv}")
+
 ################### END OF REPL #############################
 
 def main():
