@@ -262,3 +262,33 @@ Now that we know about Variable scoping and Variable capture. Let's take a look 
     * To fix this, while the substitution process
         * We first check, if the variable names in the lambda expression might cause capture
         * If so, we rename the bound variable. In this case, we rename `y` to `z` changing it to `fn z. x z`
+
+
+## What is Variable Shadowing?
+
+Variable shadowing occurs when a variable declared in an inner scope (eg. as a lambda parameter) has the same name as a variable declared in outer scope. In this case, the inner declaration "shadows" or hides the outer one within its scope.
+
+**Example 1: Basic Shadowing**
+* Expression: `fn x. (fn x. x)`
+* Step by step analysis:
+    1. Outer lambda
+        * `fn x. ...` binds the variable `x` for the entire body
+    2. Inner Lambda
+        * Inside the body, we have `fn x.x`. Here a new lambda binds `x` again
+        * The inner `x` shadows the outer `x`. This means that within the inner's lambda's body, the `x` refers to the inner binding, not the outer one.
+    3. Evaluation
+        * If you were to apply this function to an argument, the inner binding would be used, and the outer `x` would not be accessible inside the inner lambda.
+* How to resolve this?
+    1. One common approach is to perform **alpha conversion** (or normalization) before evaluation.
+    2. In normalization, you'd rename the inner lambda's parameter to something different, such as: ```fn x. (fn z. z)```
+
+**Example 2: Shadowing in more complex expression**
+* Expression: `fn x. (fn y. (x y))   applied to some argument might look like:   ((fn x. (fn y. (x y))) z)`
+* Step by step analysis:
+    1. Outer lambda
+        * `fn x. ...` binds the variable `x` for the entire body
+    2. Inner lambda
+        * Inside the body, we have `fn y. (x y)`
+        * Here `y` is freshly bound. Notice that `x` inside the inner lambda is free with respect to the inner lambda, but it is bound by the outer lambda
+    3. Shadowing considerations:
+        * Although there is no shadowing of `x` here, imagine if the inner lambda also used `x` as its parameter, eg. `fn x. (x y)`. In the case, the inner lambda's `x` would shadow the outer lambda's `x`
