@@ -7,10 +7,11 @@ from ast_internal import Expression
 class StackFrame:
     function_name: str
     ast: Expression
+    depth: int
     meta_data: Dict[str, Any] = field(default_factory=list)
 
     def __repr__(self):
-        return f"StackFrame({self.function_name}, {self.ast})"
+        return f"StackFrame(function_name: {self.function_name}, AST: {self.ast}, Depth: {self.depth})"
 
 
 class Stack:
@@ -23,6 +24,9 @@ class Stack:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
+
+    def __len__(self):
+        return len(self.stack)
 
     def push(self, frame: StackFrame) -> None:
         print(f"Pushing: {frame} into stack")

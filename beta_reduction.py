@@ -45,7 +45,7 @@ class Evaluator:
         # normalized_ast: Expression = self.normalize(ast)
 
         # Create a new stack frame and push it into the stack
-        stack_frame: StackFrame = StackFrame("beta_reduce", ast)
+        stack_frame: StackFrame = StackFrame("beta_reduce", ast, len(self.stack) + 1)
         self.stack.push(stack_frame)
 
         try:
@@ -71,7 +71,7 @@ class Evaluator:
     
     def substitute(self, param: Expression, body: Expression, argument: Expression):
 
-        stack_frame: StackFrame = StackFrame("substitute", body, {"param": param, "argument": argument})
+        stack_frame: StackFrame = StackFrame("substitute", body, len(self.stack) + 1, {"param": param, "argument": argument})
         self.stack.push(stack_frame)
 
         try:
