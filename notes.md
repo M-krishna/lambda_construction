@@ -292,3 +292,39 @@ Variable shadowing occurs when a variable declared in an inner scope (eg. as a l
         * Here `y` is freshly bound. Notice that `x` inside the inner lambda is free with respect to the inner lambda, but it is bound by the outer lambda
     3. Shadowing considerations:
         * Although there is no shadowing of `x` here, imagine if the inner lambda also used `x` as its parameter, eg. `fn x. (x y)`. In the case, the inner lambda's `x` would shadow the outer lambda's `x`
+
+## Test cases for Variable capture and Variable shadowing
+
+1. Variable capture: `(fn x. fn y. x) y`
+2. Variable shadowing: `(fn x. (fn x. x) x) y`
+
+## Church encodings
+Church encodings allows you to represent data types and operations purely through lambda functions without using any built-in primitive data types.
+
+### The fundamental idea
+Imagine you want to represent numbers, but you can't use 0, 1, 2, etc. How would you do that? Church encodings allows us to represent numbers as functions that repeat a certain operation
+
+### Church Numerals: Representing numbers
+* A church numeral is a function that takes two arguments:
+    1. A function `f`
+    2. An initial value `x`
+* The church numeral applies the function `f` to `x` a specific number of times.
+```
+zero:       λf.λx.x                 (applies f zero times)
+one:        λf.λx.f(x)              (applies f once)
+two:        λf.λx.f(f(x))           (applies f twice)
+three:      λf.λx.f(f(f(x)))       (applies f three times)
+```
+
+**Example:** Let's say we want to represent 3, and our operation is "increment"
+```
+Three   =   λf.λx.f(f(f(x)))
+
+If f is "increment" and x is 0:
+Three(increment)(0) = 3
+```
+
+### Why this matters in Lambda calculus?
+1. Everything is a function
+2. No primitive data types needed
+3. Can represent complex computations purely through function composition

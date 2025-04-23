@@ -6,7 +6,7 @@ from ast_internal import Expression, VariableNode, LambdaAbstractionNode, Lambda
 class AlphaConversion:
     def alpha_convert(self, ast: Expression, old_param: str, new_param: str):
 
-        def normalize(ast: Expression, scope: Set):
+        def normalize(ast: Expression, scope: List[Set]):
             if isinstance(ast, VariableNode):
                 if ast.value == old_param and old_param in scope[-1]:
                     return VariableNode(new_param)
@@ -34,22 +34,6 @@ class AlphaConversion:
                 raise SyntaxError(f"Unknown node type: {ast}")
         initial_scope = {old_param}
         return normalize(ast, [initial_scope])
-
-        # if isinstance(ast, VariableNode):
-        #     if ast.value == old_param:
-        #         return VariableNode(new_param)
-        #     return ast
-        # elif isinstance(ast, LambdaAbstractionNode):
-        #     if ast.param == old_param:
-        #         return LambdaAbstractionNode(new_param, self.alpha_convert(ast.body, old_param, new_param))
-        #     else:
-        #         return LambdaAbstractionNode(ast.param, self.alpha_convert(ast.body, old_param, new_param))
-        # elif isinstance(ast, LambdaApplicationNode):
-        #     new_left = self.alpha_convert(ast.left, old_param, new_param)
-        #     new_right = self.alpha_convert(ast.right, old_param, new_param)
-        #     return LambdaApplicationNode(new_left, new_right)
-        # else:
-        #     raise SyntaxError(f"Unknown node type: {ast}")
 
     def get_free_variables(self, ast: Expression):
         if isinstance(ast, VariableNode):

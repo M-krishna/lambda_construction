@@ -5,8 +5,8 @@ from dataclasses import dataclass
 class Token:
     token_type: TokenType
     lexeme: str
-    line: int
-    column: int
+    line: int = 0
+    column: int = 0
 
     def __str__(self):
         return f""
