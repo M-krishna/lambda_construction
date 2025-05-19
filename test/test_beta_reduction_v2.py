@@ -5,11 +5,12 @@ from token_type import TokenType
 from lexer import Lexer
 from parser import Parser
 from ast_internal import Expression, VariableNode, LambdaAbstractionNode, LambdaApplicationNode
-from beta_reduction import Evaluator
+from beta_reduction_v2 import Evaluator
 
-class TestBetaReduction(unittest.TestCase):
 
-    def test_beta_reduce_variable(self):
+class TestBetaReductionV2(unittest.TestCase):
+    
+    def test_variable_node(self):
         source = "x"
 
         lexer = Lexer(source)
@@ -26,7 +27,7 @@ class TestBetaReduction(unittest.TestCase):
         self.assertIsInstance(result, VariableNode)
         self.assertEqual(result, VariableNode("x")) # can't reduce a variable node further
 
-    def test_beta_reduce_abstraction(self):
+    def test_lambda_abstraction(self):
         source = "fn x.x"
 
         lexer = Lexer(source)
@@ -46,8 +47,8 @@ class TestBetaReduction(unittest.TestCase):
         self.assertIsInstance(result.body, VariableNode)
         self.assertEqual(result.body.value, "x")
 
-    def test_beta_reduce_application_1(self):
-        source = "(fn x.x) y" # Identity function
+    def test_lambda_application(self):
+        source = "(x y)"
 
         lexer = Lexer(source)
         lexer.tokenize()
@@ -58,32 +59,13 @@ class TestBetaReduction(unittest.TestCase):
         ast: List[Expression] = parser.get_ast()
 
         evaluator = Evaluator()
-        result = evaluator.beta_reduce(ast[0]) # should return VariableNode(y)
+        result: LambdaApplicationNode = evaluator.beta_reduce(ast[0])
 
-        self.assertIsInstance(result, VariableNode)
-        self.assertEqual(result.value, "y")
+        self.assertEqual(result.left, VariableNode("x"))
+        self.assertEqual(result.right, VariableNode("y"))
 
-    def test_beta_reduce_application_2(self):
-        source = "(fn x.x) (fn y.y)"
-
-        lexer = Lexer(source)
-        lexer.tokenize()
-        tokens: List[Token] = lexer.get_tokens()
-
-        parser = Parser(tokens)
-        parser.parse()
-        ast: List[Expression] = parser.get_ast()
-
-        evaluator = Evaluator()
-        result = evaluator.beta_reduce(ast[0]) # it should return (fn y.y) because it gets replaced for 'x' in the first lambda
-    
-        self.assertIsInstance(result, LambdaAbstractionNode)
-        self.assertEqual(result.param, "y")
-        self.assertIsInstance(result.body, VariableNode)
-        self.assertEqual(result.body.value, "y")
-
-    def test_beta_reduce_application_3(self):
-        source = "(fn x. x x) y" # Self application
+    def test_apply_lambda_abstraction_1(self):
+        source = "(fn x.x) y"
 
         lexer = Lexer(source)
         lexer.tokenize()
@@ -94,16 +76,12 @@ class TestBetaReduction(unittest.TestCase):
         ast: List[Expression] = parser.get_ast()
 
         evaluator = Evaluator()
-        result = evaluator.beta_reduce(ast[0]) # should return an Application node (y y)
+        result: Expression = evaluator.beta_reduce(ast[0])
 
-        self.assertIsInstance(result, LambdaApplicationNode)
-        self.assertIsInstance(result.left, VariableNode)
-        self.assertIsInstance(result.right, VariableNode)
-        self.assertEqual(result.left.value, "y")
-        self.assertEqual(result.right.value, "y")
+        self.assertEqual(result, VariableNode("y"))
 
-    def test_beta_reduce_application_4(self):
-        source = "(fn x. (fn y. x)) y"
+    def test_apply_lambda_abstraction_2(self):
+        source = "(fn x. x) (fn y. y)"
 
         lexer = Lexer(source)
         lexer.tokenize()
@@ -114,7 +92,22 @@ class TestBetaReduction(unittest.TestCase):
         ast: List[Expression] = parser.get_ast()
 
         evaluator = Evaluator()
-        result = evaluator.beta_reduce(ast[0])
+        result: Expression = evaluator.beta_reduce(ast[0])
+        print(result)
+
+    def test_apply_lambda_abstraction_3(self):
+        source = "(fn x. fn y. x y) y"
+
+        lexer = Lexer(source)
+        lexer.tokenize()
+        tokens: List[Token] = lexer.get_tokens()
+
+        parser = Parser(tokens)
+        parser.parse()
+        ast: List[Expression] = parser.get_ast()
+
+        evaluator = Evaluator()
+        result: Expression = evaluator.beta_reduce(ast[0])
         print(result)
 
 if __name__ == "__main__":

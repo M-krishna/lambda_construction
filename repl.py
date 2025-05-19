@@ -2,7 +2,8 @@ import sys
 import readline # needed for input history
 from lexer import Lexer
 from parser import Parser
-from beta_reduction import Evaluator
+# from beta_reduction import Evaluator
+from beta_reduction_v2 import Evaluator
 
 
 class Repl:
@@ -42,4 +43,4 @@ class Repl:
 
         evaluator = Evaluator()
         for a in parser.get_ast():
-            print(evaluator.beta_reduce(a))
+            print(evaluator.beta_reduction(a))
