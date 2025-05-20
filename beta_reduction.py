@@ -1,13 +1,12 @@
 from typing import Dict, Set
 from alpha_conversion import AlphaConversion
 from ast_internal import Expression, VariableNode, LambdaAbstractionNode, LambdaApplicationNode
-from stack import Stack, StackFrame
+from stack import print_stack
 
 
 class Evaluator:
     def __init__(self):
         self.alpha_conversion = AlphaConversion()
-        self.stack: Stack = Stack()
 
     def normalize(self, ast: Expression, mapping: Dict = None, used: Set = None):
         # Normalize the AST to avoid variable shadowing
@@ -41,72 +40,61 @@ class Evaluator:
         else:
             raise SyntaxError(f"Unknown node type: {ast}")
 
+    @print_stack
     def beta_reduce(self, ast: Expression):
         # normalized_ast: Expression = self.normalize(ast)
 
-        # Create a new stack frame and push it into the stack
-        stack_frame: StackFrame = StackFrame("beta_reduce", ast, len(self.stack) + 1)
-        self.stack.push(stack_frame)
+        match ast:
+            case VariableNode(_):
+                return ast
+            case LambdaAbstractionNode(param, body):
+                reduced_body = self.beta_reduce(body)
+                return LambdaAbstractionNode(param, reduced_body)
+            case LambdaApplicationNode(left, right):
+                new_left = self.beta_reduce(left)
 
-        try:
-            match ast:
-                case VariableNode(_):
-                    return ast
-                case LambdaAbstractionNode(param, body):
-                    reduced_body = self.beta_reduce(body)
-                    return LambdaAbstractionNode(param, reduced_body)
-                case LambdaApplicationNode(left, right):
-                    new_left = self.beta_reduce(left)
-
-                    if isinstance(new_left, LambdaAbstractionNode):
-                        substituted_result = self.substitute(new_left.param, new_left.body, right)
-                        return self.beta_reduce(substituted_result)
-                    
-                    new_right = self.beta_reduce(right)
-                    return LambdaApplicationNode(new_left, new_right)
-                case _:
-                    raise SyntaxError(f"Unknown node type: {ast}")
-        finally:
-            self.stack.pop()
+                if isinstance(new_left, LambdaAbstractionNode):
+                    substituted_result = self.substitute(new_left.param, new_left.body, right)
+                    return self.beta_reduce(substituted_result)
+                
+                new_right = self.beta_reduce(right)
+                return LambdaApplicationNode(new_left, new_right)
+            case _:
+                raise SyntaxError(f"Unknown node type: {ast}")
     
+    @print_stack
     def substitute(self, param: Expression, body: Expression, argument: Expression):
 
-        stack_frame: StackFrame = StackFrame("substitute", body, len(self.stack) + 1, {"param": param, "argument": argument})
-        self.stack.push(stack_frame)
+        match body:
+            case VariableNode(value):
+                if param == value:
+                    return argument
+                return body
+            case LambdaAbstractionNode(_param, _body):
+                if param != _param:
+                    # Before substituting we have to check, whether the substitution will cause variable capture
 
-        try:
-            match body:
-                case VariableNode(value):
-                    if param == value:
-                        return argument
-                    return body
-                case LambdaAbstractionNode(_param, _body):
-                    if param != _param:
-                        # Before substituting we have to check, whether the substitution will cause variable capture
+                    # Get the free variable in the argument
+                    fv = self.alpha_conversion.get_free_variables(argument)
 
-                        # Get the free variable in the argument
-                        fv = self.alpha_conversion.get_free_variables(argument)
+                    # Check if the free variable conflicts with the lambda's parameter
+                    if _param in fv:
+                        # Generate a new variable
+                        new_param: str = self.alpha_conversion.generate_new_variable(_param, fv | self.alpha_conversion.get_free_variables(_body) | self.alpha_conversion.get_bound_variables(_body))
 
-                        # Check if the free variable conflicts with the lambda's parameter
-                        if _param in fv:
-                            # Generate a new variable
-                            new_param: str = self.alpha_conversion.generate_new_variable(_param, fv | self.alpha_conversion.get_free_variables(_body) | self.alpha_conversion.get_bound_variables(_body))
+                        # Once you have a new variable, now alpha convert the body
+                        new_body = self.alpha_conversion.alpha_convert(_body, _param, new_param)
 
-                            # Once you have a new variable, now alpha convert the body
-                            new_body = self.alpha_conversion.alpha_convert(_body, _param, new_param)
+                        # Now substitute the alpha converted body
+                        r = self.substitute(param, new_body, argument)
+                        return LambdaAbstractionNode(new_param, r)
 
-                            # Now substitute the alpha converted body
-                            r = self.substitute(param, new_body, argument)
-                            return LambdaAbstractionNode(new_param, r)
-
-                        r = self.substitute(param, _body, argument)
-                        return LambdaAbstractionNode(_param, r)
-                    return body
-                case LambdaApplicationNode(left, right):
-                    new_left = self.substitute(param, left, argument)
-                    new_right = self.substitute(param, right, argument)
-                    return LambdaApplicationNode(new_left, new_right)
-                case _:
-                    raise SyntaxError(f"Unknown node type: {body}")
-        finally:
-            self.stack.pop()
+                    r = self.substitute(param, _body, argument)
+                    return LambdaAbstractionNode(_param, r)
+                return body
+            case LambdaApplicationNode(left, right):
+                new_left = self.substitute(param, left, argument)
+                new_right = self.substitute(param, right, argument)
+                return LambdaApplicationNode(new_left, new_right)
+            case _:
+                raise SyntaxError(f"Unknown node type: {body}")

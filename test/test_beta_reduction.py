@@ -5,7 +5,7 @@ from token_type import TokenType
 from lexer import Lexer
 from parser import Parser
 from ast_internal import Expression, VariableNode, LambdaAbstractionNode, LambdaApplicationNode
-from beta_reduction_v2 import Evaluator
+from beta_reduction import Evaluator
 
 class TestBetaReduction(unittest.TestCase):
 
