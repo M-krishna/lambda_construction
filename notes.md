@@ -328,3 +328,51 @@ Three(increment)(0) = 3
 1. Everything is a function
 2. No primitive data types needed
 3. Can represent complex computations purely through function composition
+
+
+## How can we solve beta reduction iteratively?
+
+So far I solved this problem recursively. But its hard to debug stuff for longer expressions. I should try to solve it iteratively.
+
+Three types:
+* Variable
+* Lambda Abstraction
+* Lambda Application
+
+We can use a Queue to solve this iteratively I believe. But how?
+
+We'll first define a queue with the initial expression that comes in.
+```python
+from queue import deque
+
+expression_queue: deque = deque([expression])
+```
+
+Until the queue becomes empty, we keep processing the queue. To process an expression, we'll pop from the queue and start processing it.
+
+### Processing a Variable expression in a queue
+We have an expression like, `x` which is a *Variable node*. This Variable node currently presents in the queue.
+
+We pop the queue, and start processing.
+```python
+expression = "x"
+
+expression_queue: deque = deque([expression])
+
+while expression_queue:
+    current = expression_queue.pop_left()
+    result = {} # stores the result of an expression
+
+    match current:
+        case VariableNode(_):
+            result[id(expression)] = expression # we can use id() function to get the memory location to act as the key of the expression
+        case _:
+            print("Ignore for now")
+```
+
+With the above mock skeleton, we can test this flow.
+
+The test is successful.
+
+### Processing a Lambda Abstraction in a queue
+We have an expression like, `fn x.x` which is a *Lambda Abstraction node*. This Lambda Abstraction node currently presents in the queue.

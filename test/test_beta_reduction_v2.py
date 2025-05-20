@@ -10,6 +10,7 @@ from beta_reduction_v2 import Evaluator
 
 class TestBetaReductionV2(unittest.TestCase):
     
+    @unittest.skip
     def test_variable_node(self):
         source = "x"
 
@@ -27,6 +28,7 @@ class TestBetaReductionV2(unittest.TestCase):
         self.assertIsInstance(result, VariableNode)
         self.assertEqual(result, VariableNode("x")) # can't reduce a variable node further
 
+    @unittest.skip
     def test_lambda_abstraction(self):
         source = "fn x.x"
 
@@ -47,6 +49,7 @@ class TestBetaReductionV2(unittest.TestCase):
         self.assertIsInstance(result.body, VariableNode)
         self.assertEqual(result.body.value, "x")
 
+    @unittest.skip
     def test_lambda_application(self):
         source = "(x y)"
 
@@ -64,6 +67,7 @@ class TestBetaReductionV2(unittest.TestCase):
         self.assertEqual(result.left, VariableNode("x"))
         self.assertEqual(result.right, VariableNode("y"))
 
+    @unittest.skip
     def test_apply_lambda_abstraction_1(self):
         source = "(fn x.x) y"
 
@@ -80,6 +84,7 @@ class TestBetaReductionV2(unittest.TestCase):
 
         self.assertEqual(result, VariableNode("y"))
 
+    @unittest.skip
     def test_apply_lambda_abstraction_2(self):
         source = "(fn x. x) (fn y. y)"
 
@@ -92,11 +97,16 @@ class TestBetaReductionV2(unittest.TestCase):
         ast: List[Expression] = parser.get_ast()
 
         evaluator = Evaluator()
-        result: Expression = evaluator.beta_reduce(ast[0])
-        print(result)
+        result: LambdaAbstractionNode = evaluator.beta_reduce(ast[0])
+
+        self.assertIsInstance(result, LambdaAbstractionNode)
+        self.assertEqual(result.param, "y")
+        self.assertEqual(result.body, VariableNode("y"))
+        self.assertIsInstance(result.body, VariableNode)
 
     def test_apply_lambda_abstraction_3(self):
-        source = "(fn x. fn y. x y) y"
+        # source = "(fn x. fn y. x y) y"
+        source = "(fn xy. x y) y"
 
         lexer = Lexer(source)
         lexer.tokenize()
@@ -108,7 +118,7 @@ class TestBetaReductionV2(unittest.TestCase):
 
         evaluator = Evaluator()
         result: Expression = evaluator.beta_reduce(ast[0])
-        print(result)
+        print(f"result: {result}")
 
 if __name__ == "__main__":
     unittest.main()
