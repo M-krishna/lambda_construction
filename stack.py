@@ -1,52 +1,39 @@
-from typing import List, Optional, Dict, Any
-from dataclasses import dataclass, field
-from ast_internal import Expression
+import os
+from typing import Callable
 
+def print_stack(func: Callable):
 
-@dataclass
-class StackFrame:
-    function_name: str
-    ast: Expression
-    depth: int
-    meta_data: Dict[str, Any] = field(default_factory=list)
+    if not isinstance(func, Callable):
+        raise TypeError("Expected an argument of type function")# Get DEBUG flag from environment, default to 0
+    
+    debug_flag = int(os.getenv('DEBUG', 0))
 
-    def __repr__(self):
-        return f"StackFrame(function_name: {self.function_name}, AST: {self.ast}, Depth: {self.depth})"
+    # Return the original function if the debug is off
+    if not debug_flag:
+        return func
 
+    
 
-class Stack:
-    _instance = None # holds an instance of the class
+    depth: int = 0
+    MAX_DEPTH: int = 500
 
-    def __init__(self):
-        self.stack: List[StackFrame] = []
+    def wrapper(*args, **kwargs):
+        nonlocal depth
 
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+        if depth >= MAX_DEPTH:
+            raise Exception("Maximum call stack depth exceeded")
+        
+        indent = " " * depth
 
-    def __len__(self):
-        return len(self.stack)
+        print(f"{indent} Entering {func.__name__}")
+        print(f"{indent} args {args}")
+        print(f"{indent} kwargs {kwargs}")
 
-    def push(self, frame: StackFrame) -> None:
-        print(f"Pushing: {frame} into stack")
-        self.stack.append(frame)
-        print(f"Current Stack state: {self.stack}")
+        depth += 1
+        result = func(*args, **kwargs)
+        depth -= 1
 
-    def pop(self) -> StackFrame:
-        print(f"Popping item from stack")
-        popped_item: StackFrame = self.stack.pop()
-        print(f"Popped item: {popped_item}")
-        return popped_item
+        print(f"{indent} Exiting {func.__name__}")
+        return result
 
-    def peek(self) -> Optional[StackFrame]:
-        if self.is_empty(): return None
-        return self.stack[-1]
-
-    def log(self) -> None:
-        for stack_frame in self.stack:
-            print(stack_frame)
-
-    @property
-    def is_empty(self) -> bool:
-        return len(self.stack) == 0
+    return wrapper
