@@ -114,8 +114,13 @@ class TestBetaReduction(unittest.TestCase):
         ast: List[Expression] = parser.get_ast()
 
         evaluator = Evaluator()
-        result = evaluator.beta_reduce(ast[0])
-        print(result)
+        result: LambdaAbstractionNode = evaluator.beta_reduce(ast[0])
+
+        self.assertIsInstance(result, LambdaAbstractionNode)
+        self.assertEqual(result.param, 'y1')
+        self.assertEqual(result.body, VariableNode("y"))
+        self.assertIsInstance(result.body, VariableNode)
+
 
 if __name__ == "__main__":
     unittest.main()
