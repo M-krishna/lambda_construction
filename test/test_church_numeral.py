@@ -85,7 +85,7 @@ class TestChurchNumeral(unittest.TestCase):
         self.assertEqual(church_numeral, 0)
     
     def test_church_numeral_one(self):
-        source = "fn f. fn x. f(x)" # variable node
+        source = "fn f. fn x. f(x)"
 
         lexer = Lexer(source)
         lexer.tokenize()
@@ -100,7 +100,7 @@ class TestChurchNumeral(unittest.TestCase):
         self.assertEqual(church_numeral, 1)
 
     def test_church_numeral_two(self):
-        source = "fn f. fn x. f(f(x))" # variable node
+        source = "fn f. fn x. f(f(x))"
 
         lexer = Lexer(source)
         lexer.tokenize()
@@ -115,7 +115,7 @@ class TestChurchNumeral(unittest.TestCase):
         self.assertEqual(church_numeral, 2)
 
     def test_church_numeral_three(self):
-        source = "fn f. fn x. f(f(f(x)))" # variable node
+        source = "fn f. fn x. f(f(f(x)))"
 
         lexer = Lexer(source)
         lexer.tokenize()
@@ -128,6 +128,21 @@ class TestChurchNumeral(unittest.TestCase):
 
         church_numeral = ChurchNumeral().decode_church_numeral(evaluator.beta_reduce(result))
         self.assertEqual(church_numeral, 3)
+
+    def test_church_numeral_ten(self):
+        source = "fn f. fn x. f(f(f(f(f(f(f(f(f(f(x))))))))))"
+
+        lexer = Lexer(source)
+        lexer.tokenize()
+
+        parser = Parser(lexer.get_tokens())
+        parser.parse()
+
+        evaluator = Evaluator()
+        result: VariableNode = evaluator.beta_reduce(parser.get_ast()[0])
+
+        church_numeral = ChurchNumeral().decode_church_numeral(evaluator.beta_reduce(result))
+        self.assertEqual(church_numeral, 10)
     
 
 if __name__ == "__main__":
