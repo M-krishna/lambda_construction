@@ -1,33 +1,44 @@
-from ast_internal import Expression, VariableNode, LambdaAbstractionNode, LambdaApplicationNode
-from ast_visualizer import to_json
+from ast_internal import VariableNode, LambdaAbstractionNode, LambdaApplicationNode
+from typing import Optional
 
 class ChurchNumeral:
-    def decode_church_numeral(self, expression: LambdaAbstractionNode):
+    def decode_church_numeral(self, expression: LambdaAbstractionNode) -> Optional[int]:
+        """
+        Check if expression is a Church numeral and return its value.
+        
+        Args:
+            expression: Lambda abstraction to check
+            
+        Returns:
+            int: The Church numeral value if valid
+            None: If not a valid Church numeral
+        """
+        # Validate basic structure
         if not isinstance(expression, LambdaAbstractionNode):
-            print("Not a church numeral")
-            return
-        
-        body = expression.body
-        
-        # the lambda abstraction should have minimum two arguments
-        # The body should also be a Lambda abstraction
-        if not isinstance(body, LambdaAbstractionNode):
-            print("Not a church numeral")
-            return
-        
-        # Now we have an expression of the form: fn f. fn x. x
-        # The last value in the whole expression could be either a VariableNode or a LambdaApplicationNode
+            return None
 
-        # If its a VariableNode, then we can consider it to be church numeral "zero"
-        inner_body = body.body
+        if not isinstance(expression.body, LambdaAbstractionNode):
+            return None
 
+        inner_body = expression.body.body
+
+        # Not a valid church numeral structure
         if (not isinstance(inner_body, VariableNode)) and (not isinstance(inner_body, LambdaApplicationNode)):
-            print("Not a church numeral")
-            return
+            return None
 
+        # Handle zero case
         if isinstance(inner_body, VariableNode):
-            print("church numeral zero 0")
-        # else it must be an application
+            return 0
+
+        # Handle positive numbers
         if isinstance(inner_body, LambdaApplicationNode):
-            # there might be "n" number of nested lambda applications
-            print(to_json(inner_body))
+            return self._count_application(inner_body)
+
+    def _count_application(self, node: LambdaApplicationNode):
+        count: int = 0
+        current = node
+
+        while isinstance(current, LambdaApplicationNode):
+            count += 1
+            current = current.right
+        return count
