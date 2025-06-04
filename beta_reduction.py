@@ -41,7 +41,7 @@ class Evaluator:
             raise SyntaxError(f"Unknown node type: {ast}")
 
     @print_stack
-    def beta_reduce(self, ast: Expression):
+    def beta_reduce(self, ast: Expression) -> Expression:
         # normalized_ast: Expression = self.normalize(ast)
 
         match ast:

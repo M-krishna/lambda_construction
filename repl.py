@@ -3,6 +3,7 @@ import readline # needed for input history
 from lexer import Lexer
 from parser import Parser
 from beta_reduction import Evaluator
+from church_encoding import ChurchNumeral
 
 
 class Repl:
@@ -41,5 +42,9 @@ class Repl:
         parser.parse()
 
         evaluator = Evaluator()
-        for a in parser.get_ast():
-            print(evaluator.beta_reduce(a))
+        reduced_expression = evaluator.beta_reduce(parser.get_ast()[0])
+
+        church_numeral = ChurchNumeral().decode_church_numeral(reduced_expression)
+        if type(church_numeral) == int:
+            print(f"Church numeral: {church_numeral}")
+        print(reduced_expression)
