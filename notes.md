@@ -328,3 +328,14 @@ Three(increment)(0) = 3
 1. Everything is a function
 2. No primitive data types needed
 3. Can represent complex computations purely through function composition
+
+### Update (4th June 2025)
+So far I've implemented the core parts like evaluating expressions using beta reduction and figuring out whether the expression is a church numeral or not. This is not enough.
+
+Well currently,
+* We can type things into the repl and it evaluates it.
+* The typed in thing can be a Varible, an Abstraction or an Application
+* Since this is about functions and functional programming, we can use Abstraction to define functions.
+
+**What more can I add?**
+* Looks like I have to add support for variables; may be with this addition we can assign a Lambda Abstraction to a variable and use it anywhere in the code.

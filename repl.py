@@ -45,6 +45,6 @@ class Repl:
         reduced_expression = evaluator.beta_reduce(parser.get_ast()[0])
 
         church_numeral = ChurchNumeral().decode_church_numeral(reduced_expression)
-        if type(church_numeral) == int:
+        if isinstance(church_numeral, int):
             print(f"Church numeral: {church_numeral}")
         print(reduced_expression)

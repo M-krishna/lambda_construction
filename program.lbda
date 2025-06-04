@@ -10,3 +10,22 @@ fn x. fn y. fn z. x
 (x y) ; function application
 
 (fn x. x)
+
+
+; Identity function (I) - returns its argument
+fn x.x
+
+; Constant function (K) - returns its first argument
+fn x. fn y. x
+
+; Substitution (S) - function composition
+fn x. fn y. fn z. x z (y z)
+
+; Compose - combines two functions
+fn f. fn g. fn x. f(g x)
+
+; Flip - reverses arguments
+fn f. fn x. fn y. f y x
+
+; Self application - applies function to itself
+fn x. x x
