@@ -3,6 +3,12 @@ from token_internal import Token
 from typing import List, Dict, Callable
 
 class Lexer:
+
+    keywords: dict = {
+        "var": TokenType.VAR.name,
+        "fn": TokenType.LAMBDA.name
+    }
+
     def __init__(self, source: str):
         self.source: str = source
         self.tokens: List[Token] = []
@@ -23,6 +29,7 @@ class Lexer:
             "(": lambda: self.add_token(TokenType.LPAREN.name),
             ")": lambda: self.add_token(TokenType.RPAREN.name),
             ".": lambda: self.add_token(TokenType.DOT.name),
+            "=": lambda: self.add_token(TokenType.EQUAL.name),
             ";": lambda: self.skip_comments()
         }
 
@@ -42,17 +49,17 @@ class Lexer:
                 self.line += 1
                 self.column = 1
         elif self.is_alpha(c):
-            self.scan_identifier(c)
+            self.scan_identifier()
         else:
             raise SyntaxError(f"Unknown character: {c}")
     
-    def scan_identifier(self, current_chr: str):
-        if current_chr == "f" and self.peek() == "n" and self.peek_next() == " ":
-            self.advance() # consume "n" character
-            self.add_token(TokenType.LAMBDA.name)
-        else:
-            self.add_token(TokenType.VARIABLE.name)
+    def scan_identifier(self):
+        while self.is_alpha(self.peek()):
+            self.advance()
 
+        text: str = self.source[self.start_position:self.current_position]
+        token_type = self.keywords.get(text, TokenType.IDENTIFIER.name)
+        self.add_token(token_type)
 
     def add_token(self, token_type: TokenType) -> None:
         lexeme: str = self.source[self.start_position:self.current_position]
@@ -60,7 +67,7 @@ class Lexer:
 
     ########################## HELPER FUNCTIONS #######################
     def is_alpha(self, c: str) -> bool:
-        return (c >= 'a' and c <= 'z') or (c >= 'A' or c <= 'Z')
+        return (c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z') or c == "_"
 
     def is_whitespace(self, c: str) -> bool:
         SPACE: str = " "
@@ -69,6 +76,7 @@ class Lexer:
         return c in [SPACE, NEWLINE, TABSPACE]
 
     def advance(self) -> str:
+        if self.is_at_end(): return '\0'
         current: str = self.source[self.current_position]
         self.current_position += 1
         self.column += 1

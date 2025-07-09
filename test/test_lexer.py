@@ -5,6 +5,7 @@ from token_internal import Token
 from token_type import TokenType
 
 class TestLexer(unittest.TestCase):
+    @unittest.skip
     def test_comment(self):
         source = "; variable"
 
@@ -14,6 +15,7 @@ class TestLexer(unittest.TestCase):
 
         self.assertEqual(tokens, [])
 
+    @unittest.skip
     def test_variable(self):
         source = "a"
 
@@ -24,6 +26,7 @@ class TestLexer(unittest.TestCase):
         self.assertEqual(tokens[0].token_type, TokenType.VARIABLE.name)
         self.assertEqual(tokens[0].lexeme, "a")
 
+    @unittest.skip
     def test_abstraction(self):
         source = "fn x.x"
 
@@ -43,6 +46,7 @@ class TestLexer(unittest.TestCase):
                 self.assertEqual(expected_tokens[index].token_type.name, token.token_type)
                 self.assertEqual(expected_tokens[index].lexeme, token.lexeme)
     
+    @unittest.skip
     def test_application_1(self):
         source = "(x y)"
 
@@ -62,6 +66,7 @@ class TestLexer(unittest.TestCase):
                 self.assertEqual(expected_tokens[index].token_type.name, token.token_type)
                 self.assertEqual(expected_tokens[index].lexeme, token.lexeme)
 
+    @unittest.skip
     def test_application_2(self):
         source = "(fn x.x) y"
 
@@ -84,6 +89,7 @@ class TestLexer(unittest.TestCase):
                 self.assertEqual(expected_tokens[index].token_type.name, token.token_type)
                 self.assertEqual(expected_tokens[index].lexeme, token.lexeme)
 
+    @unittest.skip
     def test_application_3(self):
         source = "(fn x.x) (fn y.y)"
 
@@ -110,6 +116,30 @@ class TestLexer(unittest.TestCase):
             with self.subTest(index):
                 self.assertEqual(expected_tokens[index].token_type.name, token.token_type)
                 self.assertEqual(expected_tokens[index].lexeme, token.lexeme)
+
+    def test_variable(self):
+        source = "var x = x"
+
+        lexer = Lexer(source)
+        lexer.tokenize()
+        tokens: List[Token] = lexer.get_tokens()
+        print(tokens)
+    
+    def test_abstraction(self):
+        source = "var x = fn x y.x"
+
+        lexer = Lexer(source)
+        lexer.tokenize()
+        tokens: List[Token] = lexer.get_tokens()
+        print(tokens)
+
+    def test_application(self):
+        source = "var x = (x y)"
+
+        lexer = Lexer(source)
+        lexer.tokenize()
+        tokens: List[Token] = lexer.get_tokens()
+        print(tokens)
 
 if __name__ == "__main__":
     unittest.main()

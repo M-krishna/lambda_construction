@@ -329,7 +329,7 @@ Three(increment)(0) = 3
 2. No primitive data types needed
 3. Can represent complex computations purely through function composition
 
-### Update (4th June 2025)
+## Update (4th June 2025)
 So far I've implemented the core parts like evaluating expressions using beta reduction and figuring out whether the expression is a church numeral or not. This is not enough.
 
 Well currently,
@@ -339,3 +339,18 @@ Well currently,
 
 **What more can I add?**
 * Looks like I have to add support for variables; may be with this addition we can assign a Lambda Abstraction to a variable and use it anywhere in the code.
+
+### Adding variable support to Lambda calculus
+**How can we add variable support to Lambda calculus?**
+
+We'll we first define how it would look like:
+```
+var a = <an_expression>
+
+; example
+var a = x ; Variable
+var b = fn x.x; Lambda abstraction
+var c = (x y); Lambda application
+```
+
+We have to update our lexer and parser and update our evaluator as well. So far our evaluator (beta reduce) expects an expression. If a variable is defined, we have to write a different evaluator for that.

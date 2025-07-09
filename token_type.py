@@ -7,4 +7,7 @@ class TokenType(Enum):
     DOT = "dot"
     LPAREN = "lparen"
     RPAREN = "rparen"
+    VAR = "var"
+    IDENTIFIER = "identifier"
+    EQUAL = "equal"
     EOF = "eof"
